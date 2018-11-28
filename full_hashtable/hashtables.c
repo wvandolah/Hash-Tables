@@ -66,7 +66,9 @@ unsigned int hash(char *str, int max)
  ****/
 HashTable *create_hash_table(int capacity)
 {
-  HashTable *ht;
+  HashTable *ht = malloc(sizeof(HashTable));
+  ht->capacity = capacity;
+  ht->storage = calloc(capacity, sizeof(LinkedPair *));
 
   return ht;
 }
@@ -82,7 +84,31 @@ HashTable *create_hash_table(int capacity)
  ****/
 void hash_table_insert(HashTable *ht, char *key, char *value)
 {
+  // hash key to get index
+  // pointer to linkedpar at index
+  // if pair in Null insert, else loop thru `next` until null or matching key found
+  int hashedKey = hash(key, ht->capacity);
+  printf("1test\n");
+  if(ht->storage[hashedKey] == NULL){
+    printf("2test\n");
+    ht->storage[hashedKey] = create_pair(key, value);
+  }else{
+    LinkedPair *pair = ht->storage[hashedKey];
+    printf("3test%s\n", pair->value);
+    while(pair != NULL){
+      if(strcmp(pair->key, key) == 0){
+        pair->value = value;
+        break;
+      }else if (pair->next == NULL){
+        pair->next = create_pair(key, value);
+        break;
+      }else{
+        printf("in loop value %s\n", pair->value);
+        pair = pair->next;
+      }
 
+    }
+  }
 }
 
 /****
@@ -95,7 +121,27 @@ void hash_table_insert(HashTable *ht, char *key, char *value)
  ****/
 void hash_table_remove(HashTable *ht, char *key)
 {
-
+  // pointers to first pair at index and a trailing pointer
+  // loop thru pair looking for a matching key or null
+  // check if pair is null, if it is, no matching key was found
+  // check if trail is null, if it is, then change index to next
+  // set trail next to equal pair next
+  int hashedKey = hash(key, ht->capacity);
+  LinkedPair *pair = ht->storage[hashedKey];
+  LinkedPair *trail = NULL;
+  while(pair != NULL && strcmp(pair->key, key) != 0){
+    trail = pair;
+    pair = pair->next;
+  }
+  if(pair == NULL){
+    printf("%s is not a key", key);
+    return;
+  }
+  if(trail == NULL){
+    ht->storage[hashedKey] = pair->next;
+  }else{
+    trail->next = pair->next;
+  }
 }
 
 /****
@@ -108,6 +154,14 @@ void hash_table_remove(HashTable *ht, char *key)
  ****/
 char *hash_table_retrieve(HashTable *ht, char *key)
 {
+  int hashedKey = hash(key, ht->capacity);
+  LinkedPair *pair = ht->storage[hashedKey];
+  while(pair != NULL){
+    if(strcmp(pair->key, key) == 0){
+      return pair->value;
+    }
+    pair = pair->next;
+  }
   return NULL;
 }
 
@@ -118,7 +172,20 @@ char *hash_table_retrieve(HashTable *ht, char *key)
  ****/
 void destroy_hash_table(HashTable *ht)
 {
+  LinkedPair *current_pair;
+  LinkedPair *pair_to_destroy;
 
+  for (int i = 0 ; i < ht->capacity ; i++) {
+    current_pair = ht->storage[i];
+    while(current_pair != NULL) {
+      pair_to_destroy = current_pair;
+      current_pair = current_pair->next;
+      destroy_pair(pair_to_destroy);
+    }
+  }
+
+  free(ht->storage);
+  free(ht);
 }
 
 /****
@@ -129,12 +196,12 @@ void destroy_hash_table(HashTable *ht)
 
   Don't forget to free any malloc'ed memory!
  ****/
-HashTable *hash_table_resize(HashTable *ht)
-{
-  HashTable *new_ht;
+// HashTable *hash_table_resize(HashTable *ht)
+// {
+//   HashTable *new_ht;
 
-  return new_ht;
-}
+//   return new_ht;
+// }
 
 
 #ifndef TESTING
@@ -150,11 +217,11 @@ int main(void)
   printf("%s", hash_table_retrieve(ht, "line_2"));
   printf("%s", hash_table_retrieve(ht, "line_3"));
 
-  int old_capacity = ht->capacity;
-  ht = hash_table_resize(ht);
-  int new_capacity = ht->capacity;
+  // int old_capacity = ht->capacity;
+  // ht = hash_table_resize(ht);
+  // int new_capacity = ht->capacity;
 
-  printf("\nResizing hash table from %d to %d.\n", old_capacity, new_capacity);
+  // printf("\nResizing hash table from %d to %d.\n", old_capacity, new_capacity);
 
   destroy_hash_table(ht);
 
